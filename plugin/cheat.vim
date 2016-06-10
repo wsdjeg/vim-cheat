@@ -4,8 +4,7 @@
 " License:      MIT
 " Version:      0.1.0
 
-if exists('g:loaded_cheats')
-    echohl WarningMsg | echom 'cheat.vim already loaded!' | echohl None
+if exists('g:loaded_cheat')
     finish
 endif
 
@@ -21,7 +20,7 @@ let s:cheats_split = get(g:, 'cheats_split', 'hor')
 " Constants
 let s:splitCmdMap = { 'ver' : 'vsp' ,  'hor' : 'sp' }
 
-let s:cheat_sheets = join(map(split(globpath('~/.cheats', '*'),'\n'), "fnamemodify(v:val, ':t')"),"\n")
+let s:cheat_sheets = join(map(split(globpath(s:cheats_dir, '*'),'\n'), "fnamemodify(v:val, ':t')"),"\n")
 
 " Func Defs
 func! FindOrCreateOutWin(bufName)
@@ -64,11 +63,10 @@ func! RunAndRedirectOut(cheatName, bufName)
     exec l:outWinNr.' wincmd w'
 
     " Build the final (vim) command we're gonna run
-    let l:runCmd = 'r ' . s:cheats_dir . a:cheatName
+    let l:runCmd = 'r ' . fnameescape(s:cheats_dir . a:cheatName)
 
     " Run it
     normal! G
-    let l:curpos = getpos('.') " Save cursor position for scrolling later on
     silent! exec l:runCmd
 
     normal! gg
@@ -79,9 +77,9 @@ func! CheatCompletion(ArgLead, CmdLine, CursorPos)
 endf
 
 func! Cheat(c)
-    let l:c = strlen(a:c) ? a:c : input('Cheat Sheet: ', '', 'custom,CheatCompletion')
+    let l:c = !empty(a:c) ? a:c : input('Cheat Sheet: ', '', 'custom,CheatCompletion')
     let l:outBuf = FindOrCreateOutWin('-cheat_output-')
-    call RunAndRedirectOut(a:c, l:outBuf)
+    call RunAndRedirectOut(l:c, l:outBuf)
 endf
 
 func! CheatCurrent()
@@ -92,10 +90,19 @@ endf
 comm! -nargs=1 -complete=custom,CheatCompletion Cheat :call Cheat(<q-args>)
 comm! CheatCurrent :call CheatCurrent()
 comm! CheatRecent :call Cheat('recent')
-nmap <leader>C  :call Cheat("")<CR>
 
-" Ask for cheatsheet for the word under cursor
-nmap <leader>ch :call CheatCurrent()<CR>
-vmap <leader>ch <ESC>:call CheatCurrent()<CR>
-
-let g:loaded_cheats = '0.1.0'
+" Disable default mappings
+"       let g:Cheat_EnableDefaultMappings = 0
+if get(g:, 'Cheat_EnableDefaultMappings', 1)
+    if empty(maparg('<Leader>C', 'n'))
+        nnoremap <Leader>C :call Cheat('')<CR>
+    endif
+    " Ask for cheatsheet for the word under cursor
+    if empty(maparg('<Leader>ch', 'n'))
+        nmap <leader>ch :call CheatCurrent()<CR>
+    endif
+    if empty(maparg('<Leader>ch', 'v'))
+        vmap <leader>ch <ESC>:call CheatCurrent()<CR>
+    endif
+endif
+let g:loaded_cheat = 1
