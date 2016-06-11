@@ -22,6 +22,8 @@ let s:splitCmdMap = { 'ver' : 'vsp' ,  'hor' : 'sp' }
 
 let s:cheat_sheets = join(map(split(globpath(s:cheats_dir, '*'),'\n'), "fnamemodify(v:val, ':t')"),"\n")
 
+let s:cheat_options = {"-add" : "add new cheatsheet" , "-update" : "update current cheatsheet"}
+
 " Func Defs
 func! FindOrCreateOutWin(bufName)
     let l:outWinNr = bufwinnr(a:bufName)
@@ -73,13 +75,21 @@ func! RunAndRedirectOut(cheatName, bufName)
 endf
 
 func! CheatCompletion(ArgLead, CmdLine, CursorPos)
+    echom "arglead:[".a:ArgLead ."] cmdline:[" .a:CmdLine ."] cursorpos:[" .a:CursorPos ."]"
+    if a:ArgLead =~ '^-\w*'
+        return join(keys(s:cheat_options),"\n")
+    endif
     return s:cheat_sheets
 endf
 
-func! Cheat(c)
-    let l:c = !empty(a:c) ? a:c : input('Cheat Sheet: ', '', 'custom,CheatCompletion')
-    let l:outBuf = FindOrCreateOutWin('-cheat_output-')
-    call RunAndRedirectOut(l:c, l:outBuf)
+func! Cheat(...)
+    let l:c = a:0 != 0 ? a:000 : split(input('Cheat Sheet: ', '', 'custom,CheatCompletion'),' ')
+    if len(l:c) == 1 && l:c[0] !~ '^-\w*'
+        let l:outBuf = FindOrCreateOutWin('-cheat_output-')
+        call RunAndRedirectOut(l:c, l:outBuf)
+    elseif len(l:c) == 2 && l:c[0] ==# '-add' && l:c[1] !~ '^-\w*'
+        exe "split ". s:cheats_dir . fnameescape(l:c[1])
+    endif
 endf
 
 func! CheatCurrent()
@@ -87,7 +97,7 @@ func! CheatCurrent()
 endf
 
 " Commands Mappings
-comm! -nargs=1 -complete=custom,CheatCompletion Cheat :call Cheat(<q-args>)
+comm! -nargs=* -complete=custom,CheatCompletion Cheat :call Cheat(<f-args>)
 comm! CheatCurrent :call CheatCurrent()
 comm! CheatRecent :call Cheat('recent')
 
@@ -95,7 +105,7 @@ comm! CheatRecent :call Cheat('recent')
 "       let g:Cheat_EnableDefaultMappings = 0
 if get(g:, 'Cheat_EnableDefaultMappings', 1)
     if empty(maparg('<Leader>C', 'n'))
-        nnoremap <Leader>C :call Cheat('')<CR>
+        nnoremap <Leader>C :call Cheat()<CR>
     endif
     " Ask for cheatsheet for the word under cursor
     if empty(maparg('<Leader>ch', 'n'))
