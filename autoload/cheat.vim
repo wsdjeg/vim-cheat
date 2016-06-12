@@ -24,3 +24,7 @@ function! cheat#Update(cheatName) abort
         echohl WarningMsg | echom "Has no upstream for " . a:cheatName | echohl None
     endif
 endfunction
+
+function! cheat#List_sheets() abort
+    return map(split(globpath(g:cheats_dir, '*'),'\n'), "fnamemodify(v:val, ':t')")
+endfunction

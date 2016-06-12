@@ -20,8 +20,6 @@ let s:cheats_split = get(g:, 'cheats_split', 'hor')
 " Constants
 let s:splitCmdMap = { 'ver' : 'vsp' ,  'hor' : 'sp' }
 
-let s:cheat_sheets = join(map(split(globpath(g:cheats_dir, '*'),'\n'), "fnamemodify(v:val, ':t')"),"\n")
-
 let s:cheat_options = {"-add" : "add new cheatsheet" , "-update" : "update current cheatsheet"}
 
 " Func Defs
@@ -79,7 +77,7 @@ func! CheatCompletion(ArgLead, CmdLine, CursorPos)
     if a:ArgLead =~ '^-\w*'
         return join(keys(s:cheat_options),"\n")
     endif
-    return s:cheat_sheets
+    return join(cheat#List_sheets(),"\n")
 endf
 
 func! Cheat(...)
@@ -88,7 +86,13 @@ func! Cheat(...)
         let l:outBuf = FindOrCreateOutWin('-cheat_output-')
         call RunAndRedirectOut(l:c[0], l:outBuf)
     elseif len(l:c) == 2 && l:c[0] ==# '-add' && l:c[1] !~ '^-\w*'
-        exe "split ". g:cheats_dir . fnameescape(l:c[1])
+        if index(cheat#List_sheets(), l:c[1]) == -1
+            exe "split ". g:cheats_dir . fnameescape(l:c[1])
+        else
+            echohl WarningMsg | echom "cheets " . l:c[1] . " already exists" | echohl None
+        endif
+    elseif len(l:c) == 2 && l:c[0] ==# '-update' && l:c[1] !~ '^-\w*'
+        call cheat#Update(l:c[1])
     endif
 endf
 
@@ -99,7 +103,6 @@ endf
 " Commands Mappings
 comm! -nargs=* -complete=custom,CheatCompletion Cheat :call Cheat(<f-args>)
 comm! CheatCurrent :call CheatCurrent()
-comm! CheatRecent :call Cheat('recent')
 
 " Disable default mappings
 "       let g:Cheat_EnableDefaultMappings = 0
@@ -110,9 +113,6 @@ if get(g:, 'Cheat_EnableDefaultMappings', 1)
     " Ask for cheatsheet for the word under cursor
     if empty(maparg('<Leader>ch', 'n'))
         nmap <leader>ch :call CheatCurrent()<CR>
-    endif
-    if empty(maparg('<Leader>ch', 'v'))
-        vmap <leader>ch <ESC>:call CheatCurrent()<CR>
     endif
 endif
 let g:loaded_cheat = 1
