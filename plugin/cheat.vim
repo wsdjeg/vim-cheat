@@ -11,7 +11,7 @@ endif
 " Set the path to the cheat sheets cache file, can be overriden from
 " .vimrc with:
 "               let g:cheats_dir = '/path/to/your/cache/file'
-let s:cheats_dir = get(g:, 'cheats_dir', $HOME . '/.cheat/')
+let g:cheats_dir = get(g:, 'cheats_dir', $HOME . '/.cheat/')
 
 " Set the split direction for the output buffer.
 " It can be overriden from .vimrc as well, by setting g:cheats_split to hor | ver
@@ -19,8 +19,6 @@ let s:cheats_split = get(g:, 'cheats_split', 'hor')
 
 " Constants
 let s:splitCmdMap = { 'ver' : 'vsp' ,  'hor' : 'sp' }
-
-let s:cheat_sheets = join(map(split(globpath(s:cheats_dir, '*'),'\n'), "fnamemodify(v:val, ':t')"),"\n")
 
 let s:cheat_options = {"-add" : "add new cheatsheet" , "-update" : "update current cheatsheet"}
 
@@ -65,7 +63,7 @@ func! RunAndRedirectOut(cheatName, bufName)
     exec l:outWinNr.' wincmd w'
 
     " Build the final (vim) command we're gonna run
-    let l:runCmd = 'r ' . fnameescape(s:cheats_dir . a:cheatName)
+    let l:runCmd = 'r ' . fnameescape(g:cheats_dir . a:cheatName)
 
     " Run it
     normal! G
@@ -79,7 +77,7 @@ func! CheatCompletion(ArgLead, CmdLine, CursorPos)
     if a:ArgLead =~ '^-\w*'
         return join(keys(s:cheat_options),"\n")
     endif
-    return s:cheat_sheets
+    return join(cheat#List_sheets(),"\n")
 endf
 
 func! Cheat(...)
@@ -88,7 +86,13 @@ func! Cheat(...)
         let l:outBuf = FindOrCreateOutWin('-cheat_output-')
         call RunAndRedirectOut(l:c[0], l:outBuf)
     elseif len(l:c) == 2 && l:c[0] ==# '-add' && l:c[1] !~ '^-\w*'
-        exe "split ". s:cheats_dir . fnameescape(l:c[1])
+        if index(cheat#List_sheets(), l:c[1]) == -1
+            exe "split ". g:cheats_dir . fnameescape(l:c[1])
+        else
+            echohl WarningMsg | echom "cheets " . l:c[1] . " already exists" | echohl None
+        endif
+    elseif len(l:c) == 2 && l:c[0] ==# '-update' && l:c[1] !~ '^-\w*'
+        call cheat#Update(l:c[1])
     endif
 endf
 
@@ -99,7 +103,6 @@ endf
 " Commands Mappings
 comm! -nargs=* -complete=custom,CheatCompletion Cheat :call Cheat(<f-args>)
 comm! CheatCurrent :call CheatCurrent()
-comm! CheatRecent :call Cheat('recent')
 
 " Disable default mappings
 "       let g:Cheat_EnableDefaultMappings = 0
@@ -110,9 +113,6 @@ if get(g:, 'Cheat_EnableDefaultMappings', 1)
     " Ask for cheatsheet for the word under cursor
     if empty(maparg('<Leader>ch', 'n'))
         nmap <leader>ch :call CheatCurrent()<CR>
-    endif
-    if empty(maparg('<Leader>ch', 'v'))
-        vmap <leader>ch <ESC>:call CheatCurrent()<CR>
     endif
 endif
 let g:loaded_cheat = 1
