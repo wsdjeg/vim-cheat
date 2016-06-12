@@ -62,13 +62,7 @@ func! RunAndRedirectOut(cheatName, bufName)
     let l:outWinNr = bufwinnr(a:bufName)
     exec l:outWinNr.' wincmd w'
 
-    " Build the final (vim) command we're gonna run
-    let l:runCmd = 'r ' . fnameescape(g:cheats_dir . a:cheatName)
-
-    " Run it
-    normal! G
-    silent! exec l:runCmd
-
+    call append(0, readfile(fnameescape(g:cheats_dir . a:cheatName)))
     normal! gg
 endf
 
