@@ -11,7 +11,7 @@ endif
 " Set the path to the cheat sheets cache file, can be overriden from
 " .vimrc with:
 "               let g:cheats_dir = '/path/to/your/cache/file'
-let s:cheats_dir = get(g:, 'cheats_dir', $HOME . '/.cheats/')
+let s:cheats_dir = get(g:, 'cheats_dir', $HOME . '/.cheat/')
 
 " Set the split direction for the output buffer.
 " It can be overriden from .vimrc as well, by setting g:cheats_split to hor | ver
@@ -86,7 +86,7 @@ func! Cheat(...)
     let l:c = a:0 != 0 ? a:000 : split(input('Cheat Sheet: ', '', 'custom,CheatCompletion'),' ')
     if len(l:c) == 1 && l:c[0] !~ '^-\w*'
         let l:outBuf = FindOrCreateOutWin('-cheat_output-')
-        call RunAndRedirectOut(l:c, l:outBuf)
+        call RunAndRedirectOut(l:c[0], l:outBuf)
     elseif len(l:c) == 2 && l:c[0] ==# '-add' && l:c[1] !~ '^-\w*'
         exe "split ". s:cheats_dir . fnameescape(l:c[1])
     endif
